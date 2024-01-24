@@ -22,13 +22,12 @@ class ConsoleApp1
 
                 string query = "select DISTINCT accountCode, accountName,documentDate,srcDocNO, description , debitAmount, creditAmount from mytable;";
 
-                using (MySqlCommand command = new MySqlCommand(query, connection))
-                {
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                
                     MySqlDataReader reader = command.ExecuteReader();
 
                     if (reader.HasRows)
                     {
-
                         readData(reader, dataArray);
                     }
                     else
@@ -37,12 +36,14 @@ class ConsoleApp1
                     }
 
                     reader.Dispose();
-                }
+                    command.Dispose();
 
-            } catch (Exception ex) {
+            } catch (Exception ex) 
+            {
                 Console.WriteLine($"Error: {ex.Message}");
             }
-            connection.Dispose();
+
+        connection.Dispose();
         
         createExcel(dataArray);
         Console.WriteLine("Finished");
@@ -76,12 +77,13 @@ class ConsoleApp1
             dataArray.Add(data);
         }
     }
+
     static void createExcel(List<Records> dataArray)
     {
         string filePath = "C:\\Users\\JIMMY\\OneDrive\\Desktop\\ExcelFile.xlsx";
         var spreadsheetDocument = SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook);
         
-            /** BOILERPLATE**/
+            /** BOILERPLATE TO CREATE PART**/
             // Add a workbook part
             var workbookPart = spreadsheetDocument.AddWorkbookPart();
             workbookPart.Workbook = new Workbook();
@@ -95,6 +97,8 @@ class ConsoleApp1
             var sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild(new Sheets());
             var sheet = new Sheet() { Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "Ledger" };
             sheets.Append(sheet);
+            
+            // Add workbook styles part for cell format
             WorkbookStylesPart workbookStylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
             workbookStylesPart.Stylesheet = GenerateStylesheet();
             /** BOILERPLATE**/
@@ -102,21 +106,18 @@ class ConsoleApp1
             /** HEADER ROW **/
             var headerRow = new Row();
             string[] headers = { "#", "Doc.Date", "Doc.NO", "Description", "Debit", "Credit", "Balance" };
-
             foreach (var header in headers)
             {
                 var cell = new Cell(new InlineString(new Text(header))) { DataType = CellValues.InlineString };
                 headerRow.AppendChild(cell);
             }
-
             sheetData.AppendChild(headerRow);
             /** HEADER ROW **/
 
+            //empty row
             var emptyRow = new Row();
-            var emptyCell = new Cell(new InlineString(new Text(""))) { DataType = CellValues.InlineString };
-            emptyRow.AppendChild(emptyCell);
             sheetData.AppendChild(emptyRow);
-
+            
             var mergeCells = worksheetPart.Worksheet.Elements<MergeCells>().FirstOrDefault();
             if (mergeCells == null)
             {
@@ -128,7 +129,7 @@ class ConsoleApp1
             for (int numRecord = 0; numRecord < dataArray.Count; numRecord++)
             {
                 int groupingNo = 0;
-                /** GROUPING  **/
+                /** GROUPING START **/
                 if (numRecord + 1 < dataArray.Count)
                 {
                     
@@ -157,7 +158,7 @@ class ConsoleApp1
                         {
                             num++; // increase the count
                             var rowGroupingChild = new Row();
-                            var groupingChildCell = new Cell(new CellValue(num)) { DataType = CellValues.Number, CellReference = "A" + (sheetData.Elements<Row>().Count() + 1) };
+                            var groupingChildCell = new Cell(new CellValue(num)) { DataType = CellValues.Number };
                             rowGroupingChild.AppendChild(groupingChildCell);
                             var groupingChildCell2 = new Cell(new InlineString(new Text(dataArray[i].documentDate))) { DataType = CellValues.InlineString };
                             rowGroupingChild.AppendChild(groupingChildCell2);
@@ -177,31 +178,30 @@ class ConsoleApp1
                             
                             if (firstTime == false)
                             {
-                                var groupingChildCell5 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 3 };
+                                var groupingChildCell5 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 4 };
                                 rowGroupingChild.AppendChild(groupingChildCell5);
-                                var groupingChildCell6 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 3 };
+                                var groupingChildCell6 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 4 };
                                 rowGroupingChild.AppendChild(groupingChildCell6);
                                 firstTime = true;
                             }
                             else
                             {
-                                var groupingChildCell5 = new Cell(new CellValue(dataArray[i].debitAmount)) { DataType = CellValues.Number, StyleIndex = 3 };
+                                var groupingChildCell5 = new Cell(new CellValue(dataArray[i].debitAmount)) { DataType = CellValues.Number, StyleIndex = 4 };
                                 rowGroupingChild.AppendChild(groupingChildCell5);
-                                var groupingChildCell6 = new Cell(new CellValue(dataArray[i].creditAmount)) { DataType = CellValues.Number, StyleIndex = 3 };
+                                var groupingChildCell6 = new Cell(new CellValue(dataArray[i].creditAmount)) { DataType = CellValues.Number, StyleIndex = 4 };
                                 rowGroupingChild.AppendChild(groupingChildCell6);
                             }
 
-                            var groupingChildCell7 = new Cell(new CellValue(groupingBalance)) { DataType = CellValues.Number, StyleIndex = 3 };
+                            var groupingChildCell7 = new Cell(new CellValue(groupingBalance)) { DataType = CellValues.Number, StyleIndex = 4 };
                             rowGroupingChild.AppendChild(groupingChildCell7);
                             sheetData.AppendChild(rowGroupingChild);
                         }
                         
                         var rowGroupingChild3 = new Row();
-                        //var rowGroupingChild4 = new Row();
-                        var rowGroupingChild5 = new Row();
+                        var rowGroupingChild4 = new Row();
                         for (int i = 0; i < 4; i++)
                         {
-                            var cell = new Cell(new InlineString(new Text(""))) { DataType = CellValues.InlineString };
+                            var cell = new Cell() { DataType = CellValues.InlineString };
                             rowGroupingChild3.AppendChild(cell);
                         }
 
@@ -212,21 +212,7 @@ class ConsoleApp1
                         var gr3c7= new Cell(new CellValue(groupingBalance)) { DataType = CellValues.Number, StyleIndex = 3 };
                         rowGroupingChild3.AppendChild(gr3c7);
                         sheetData.AppendChild(rowGroupingChild3);
-
-                        //for (int i = 0; i < 4; i++)
-                        //{
-                        //    var cell = new Cell(new InlineString(new Text(""))) { DataType = CellValues.InlineString };
-                        //    rowGroupingChild4.AppendChild(cell);
-                        //}
-
-                        //var gr4c5 = new Cell(new CellValue(groupingDebit)) { DataType = CellValues.Number };
-                        //rowGroupingChild4.AppendChild(gr4c5);
-                        //var gr4c6 = new Cell(new CellValue(groupingCredit)) { DataType = CellValues.Number };
-                        //rowGroupingChild4.AppendChild(gr4c6);
-                        //var gr4c7 = new Cell(new CellValue(groupingBalance)) { DataType = CellValues.Number };
-                        //rowGroupingChild4.AppendChild(gr4c7);
-                        //sheetData.AppendChild(rowGroupingChild4);
-                        sheetData.AppendChild(rowGroupingChild5);
+                        sheetData.AppendChild(rowGroupingChild4);
 
                         numRecord += (groupingNo - numRecord);
                         continue;
@@ -239,10 +225,9 @@ class ConsoleApp1
                 var row1 = new Row();
                 var row2 = new Row();
                 var row3 = new Row();
-                //var row4 = new Row();
-                var row5 = new Row();
+                var row4 = new Row();
 
-                // Add cells for the first two columns and merge them from A to H
+                // row 1
                 var mergeCell = new MergeCell() { Reference = new StringValue("A" + (sheetData.Elements<Row>().Count() + 1) + ":H" + (sheetData.Elements<Row>().Count() + 1)) };
                 mergeCells.Append(mergeCell);
 
@@ -250,39 +235,34 @@ class ConsoleApp1
                 row1.AppendChild(r1c1);
                 sheetData.AppendChild(row1);
 
-                // Add cell for the sequential number
-                var r2c1 = new Cell(new CellValue(num.ToString())) { DataType = CellValues.Number, CellReference = "A" + (sheetData.Elements<Row>().Count() + 1) };
+                /** Row 2 **/
+                var r2c1 = new Cell(new CellValue(num)) { DataType = CellValues.Number };
                 row2.AppendChild(r2c1);
-
                 var r2c2 = new Cell(new InlineString(new Text(dataArray[numRecord].documentDate))) { DataType = CellValues.InlineString };
                 row2.AppendChild(r2c2);
-
                 var r2c3 = new Cell(new InlineString(new Text(dataArray[numRecord].documentTitle))) { DataType = CellValues.InlineString };
                 row2.AppendChild(r2c3);
-
                 var r2c4 = new Cell(new InlineString(new Text(dataArray[numRecord].Description))) { DataType = CellValues.InlineString };
                 row2.AppendChild(r2c4);
-
 
                 double balance = 0;
 
                 balance += dataArray[numRecord].debitAmount;
                 balance -= dataArray[numRecord].creditAmount;
 
-
-
-                var r2c5 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 3 };
+                var r2c5 = new Cell(new CellValue("0")) { DataType = CellValues.Number, StyleIndex = 4 };
                 row2.AppendChild(r2c5);
-                var r2c6 = new Cell(new CellValue("0")) { DataType = CellValues.Number , StyleIndex = 3 };
+                var r2c6 = new Cell(new CellValue("0")) { DataType = CellValues.Number , StyleIndex = 4 };
                 row2.AppendChild(r2c6);
-
-                var r2c7 = new Cell(new CellValue(balance)) { DataType = CellValues.Number, StyleIndex = 3 };
+                var r2c7 = new Cell(new CellValue(balance)) { DataType = CellValues.Number, StyleIndex = 4 };
                 row2.AppendChild(r2c7);
                 sheetData.AppendChild(row2);
+                /** Row 2 **/
 
-                for(int i = 0; i < 4; i++)
+                /** Row 3 **/
+                for (int i = 0; i < 4; i++)
                 {
-                    var cell = new Cell(new InlineString(new Text(""))) { DataType = CellValues.InlineString };
+                    var cell = new Cell() { DataType = CellValues.InlineString };
                     row3.AppendChild(cell);
                 }
 
@@ -293,27 +273,17 @@ class ConsoleApp1
                 
                 var r3c7 = new Cell(new CellValue(balance)) { DataType = CellValues.Number , StyleIndex = 3 };
                 row3.AppendChild(r3c7);
+
                 sheetData.AppendChild(row3);
+                /** Row 3 **/
 
-
-                //for (int i = 0; i < 4; i++)
-                //{
-                //    var cell = new Cell(new InlineString(new Text(""))) { DataType = CellValues.InlineString };
-                //    row4.AppendChild(cell);
-                //}
-
-                //var r4c5 = new Cell(new CellValue("0")) { DataType = CellValues.Number };
-                //row4.AppendChild(r4c5);
-                //var r4c6 = new Cell(new CellValue("0")) { DataType = CellValues.Number };
-                //row4.AppendChild(r4c6);
-                //var r4c7 = new Cell(new CellValue(balance)) { DataType = CellValues.Number };
-                //row4.AppendChild(r4c7);
-                //sheetData.AppendChild(row4);
-                sheetData.AppendChild(row5);
+                // row 4
+                sheetData.AppendChild(row4);
 
             }
-        workbookStylesPart.Stylesheet.Save();
-        spreadsheetDocument.Save();
+
+            workbookStylesPart.Stylesheet.Save();
+            spreadsheetDocument.Save();
             spreadsheetDocument.Dispose();
 
         Console.WriteLine($"Excel file created at: {filePath}");
@@ -350,6 +320,7 @@ class ConsoleApp1
         fills.Append(fill);
         fills.Count = (uint)fills.ChildElements.Count;
 
+
         Borders borders = new Borders();
         Border border = new Border();
         border.LeftBorder = new LeftBorder();
@@ -357,8 +328,21 @@ class ConsoleApp1
         border.TopBorder = new TopBorder();
         border.BottomBorder = new BottomBorder();
         border.DiagonalBorder = new DiagonalBorder();
+        Border border2 = new Border();
+        border2.AppendChild(new LeftBorder());
+        border2.AppendChild(new RightBorder());
+        TopBorder topBorder = new TopBorder() { Style = BorderStyleValues.Thin };
+        topBorder.AppendChild(new Color() { Indexed = 64 });
+        border2.AppendChild(topBorder);
+        BottomBorder bottomBorder = new BottomBorder() { Style = BorderStyleValues.Double };
+        bottomBorder.AppendChild(new Color() { Indexed = 64 });
+        border2.AppendChild(bottomBorder);
+        border2.AppendChild(new DiagonalBorder());
+        
         borders.Append(border);
+        borders.AppendChild(border2);
         borders.Count = (uint)borders.ChildElements.Count;
+
 
         CellStyleFormats csfs = new CellStyleFormats();
         CellFormat cf = new CellFormat();
@@ -381,13 +365,11 @@ class ConsoleApp1
         cf.FormatId = 0;
         cfs.Append(cf);
 
+
         NumberingFormat nf;
-
-
-        // #,##0.00 is also Excel style index 4
         nf = new NumberingFormat();
         nf.NumberFormatId = iExcelIndex++;
-        nf.FormatCode = "#,##0.00";
+        nf.FormatCode = "dd/mm/yyyy hh:mm:ss";
         nfs.Append(nf);
         cf = new CellFormat();
         cf.NumberFormatId = nf.NumberFormatId;
@@ -398,10 +380,36 @@ class ConsoleApp1
         cf.ApplyNumberFormat = true;
         cfs.Append(cf);
 
-        // @ is also Excel style index 49
         nf = new NumberingFormat();
         nf.NumberFormatId = iExcelIndex++;
-        nf.FormatCode = "@";
+        nf.FormatCode = "#,##0.0000";
+        nfs.Append(nf);
+        cf = new CellFormat();
+        cf.NumberFormatId = nf.NumberFormatId;
+        cf.FontId = 0;
+        cf.FillId = 0;
+        cf.BorderId = 0;
+        cf.FormatId = 0;
+        cf.ApplyNumberFormat = true;
+        cfs.Append(cf);
+
+        nf = new NumberingFormat();
+        nf.NumberFormatId = iExcelIndex++;
+        nf.FormatCode = "#,##0.00";
+        nfs.Append(nf);
+        cf = new CellFormat();
+        cf.NumberFormatId = nf.NumberFormatId;
+        cf.FontId = 0;
+        cf.FillId = 0;
+        cf.BorderId = 1;
+        cf.FormatId = 0;
+        cf.ApplyNumberFormat = true;
+        cf.ApplyBorder = true; // Make sure to apply the border
+        cfs.Append(cf);
+
+        nf = new NumberingFormat();
+        nf.NumberFormatId = iExcelIndex++;
+        nf.FormatCode = "#,##0.00";
         nfs.Append(nf);
         cf = new CellFormat();
         cf.NumberFormatId = nf.NumberFormatId;
