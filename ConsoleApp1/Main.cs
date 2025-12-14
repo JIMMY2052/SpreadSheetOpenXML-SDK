@@ -13,7 +13,7 @@ class ConsoleApp1
     {
         List<Records> dataArray = new List<Records>();
 
-        string connectionString = "Server=localhost;Database=mydb;User ID=root;Password=jimmy2052;";
+        string connectionString = "Server=localhost;Database=mydb;User ID=root;Password=123;";
         MySqlConnection connection = new MySqlConnection(connectionString);
             try
             {
